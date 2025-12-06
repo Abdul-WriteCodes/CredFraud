@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Optimized Mobile/Desktop Fraud Detection Dashboard
-Displays Fraud Label, PCA features (friendly names), Risk Probability & Risk Level
 @author: HP
 """
 
@@ -35,15 +34,9 @@ st.markdown(
 )
 
 # ---------------- EXPECTED FEATURES ----------------
-EXPECTED_COLUMNS = (
-    ["Time", "Amount"] +
-    [f"V{i}" for i in range(1, 29)]
-)
+EXPECTED_COLUMNS = ["Time", "Amount"] + [f"V{i}" for i in range(1, 29)]
 
-# ---------------- FRIENDLY PCA FEATURE NAMES ----------------
-friendly_feature_names = {
-    f"V{i}": f"Pattern {i}" for i in range(1, 29)
-}
+friendly_feature_names = {f"V{i}": f"Pattern {i}" for i in range(1, 29)}
 
 # ---------------- LOAD MODEL ----------------
 @st.cache_resource
@@ -59,113 +52,102 @@ uploaded_file = st.file_uploader(
     type=["csv"]
 )
 
-st.markdown("### 📂 Upload Transaction File")
-
-uploaded_file = st.file_uploader(
-    "Upload CSV file containing transactions",
-    type=["csv"]
-)
-
 if uploaded_file is None:
     st.info("👆 Please upload a CSV file to begin analysis.")
     st.stop()
 
+# ---------------- DATA PREP ----------------
 df = pd.read_csv(uploaded_file)
 
-    # Remove label column if present
-    if "Class" in df.columns:
-        df = df.drop(columns=["Class"])
+# Drop label if user includes it
+if "Class" in df.columns:
+    df = df.drop(columns=["Class"])
 
-    # Add missing columns
-    for col in EXPECTED_COLUMNS:
-        if col not in df.columns:
-            df[col] = 0.0
+# Add missing columns
+for col in EXPECTED_COLUMNS:
+    if col not in df.columns:
+        df[col] = 0.0
 
-    # Enforce correct column order
-    df = df[EXPECTED_COLUMNS]
+# Enforce correct order
+df = df[EXPECTED_COLUMNS]
 
-    st.info("⏳ The system is analyzing transactions. Please wait…")
+# ---------------- PREDICTION ----------------
+st.info("⏳ The system is analyzing transactions. Please wait…")
 
-    progress = st.progress(0)
-    status = st.empty()
+progress = st.progress(0)
+status = st.empty()
 
-    with st.spinner("🤖 Running fraud detection model..."):
-        time.sleep(0.5)
-        status.text("🔍 Step 1/4: Predicting fraud labels...")
-        df["Fraud_Prediction"] = model.predict(df)
-        progress.progress(35)
+with st.spinner("🤖 Running fraud detection model..."):
+    time.sleep(0.5)
+    status.text("🔍 Step 1/4: Predicting fraud labels...")
+    df["Fraud_Prediction"] = model.predict(df)
+    progress.progress(35)
 
-        time.sleep(0.5)
-        status.text("📊 Step 2/4: Calculating fraud probabilities...")
-        df["Fraud_Probability"] = model.predict_proba(df)[:, 1]
-        progress.progress(65)
+    time.sleep(0.5)
+    status.text("📊 Step 2/4: Calculating fraud probabilities...")
+    df["Fraud_Probability"] = model.predict_proba(df)[:, 1]
+    progress.progress(65)
 
-        time.sleep(0.5)
-        status.text("🏷️ Step 3/4: Assigning fraud labels...")
-        df["Prediction_Label"] = df["Fraud_Prediction"].map(
-            {1: "Fraudulent", 0: "Non-Fraudulent"}
-        )
-        progress.progress(85)
-
-        def risk_level(p):
-            if p < 0.3:
-                return "Low"
-            elif p < 0.7:
-                return "Medium"
-            return "High"
-
-        status.text("⚠️ Step 4/4: Assessing transaction risk levels...")
-        df["Risk_Level"] = df["Fraud_Probability"].apply(risk_level)
-        progress.progress(100)
-
-    status.empty()
-    progress.empty()
-    st.success("✅ Analysis completed successfully!")
-
-    # ---------------- METRICS ----------------
-    total_tx = len(df)
-    fraud_tx = int(df["Fraud_Prediction"].sum())
-    fraud_rate = fraud_tx / total_tx * 100
-    high_risk_tx = (df["Risk_Level"] == "High").sum()
-
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Transactions", total_tx)
-    col2.metric("Detected Frauds", fraud_tx)
-    col3.metric("Fraud Rate (%)", f"{fraud_rate:.2f}%")
-    col4.metric("High-Risk Transactions", high_risk_tx)
-
-    # ---------------- DISTRIBUTION ----------------
-    st.markdown("### ⚠️ Fraud Probability Distribution")
-    fig, ax = plt.subplots(figsize=(8, 4))
-    sns.histplot(df["Fraud_Probability"], bins=30, kde=True, ax=ax)
-    ax.set_xlabel("Fraud Probability")
-    ax.set_ylabel("Count")
-    st.pyplot(fig)
-
-    # ---------------- TABLE ----------------
-    st.markdown("### 🔥 Medium & High-Risk Transactions")
-
-    display_df = df[df["Risk_Level"].isin(["Medium", "High"])].copy()
-
-    rename_map = {
-        k: v for k, v in friendly_feature_names.items()
-        if k in display_df.columns
-    }
-    display_df.rename(columns=rename_map, inplace=True)
-
-    display_cols = (
-        ["Prediction_Label", "Fraud_Probability", "Risk_Level"]
-        + list(rename_map.values())
+    time.sleep(0.5)
+    status.text("🏷️ Step 3/4: Assigning fraud labels...")
+    df["Prediction_Label"] = df["Fraud_Prediction"].map(
+        {1: "Fraudulent", 0: "Non-Fraudulent"}
     )
+    progress.progress(85)
 
-    st.dataframe(display_df[display_cols], height=450)
+    def risk_level(p):
+        if p < 0.3:
+            return "Low"
+        elif p < 0.7:
+            return "Medium"
+        return "High"
 
-    st.download_button(
-        "⬇️ Download Risk Transactions as CSV",
-        display_df.to_csv(index=False),
-        "fraud_risk_transactions.csv",
-        "text/csv"
-    )
+    status.text("⚠️ Step 4/4: Assessing transaction risk levels...")
+    df["Risk_Level"] = df["Fraud_Probability"].apply(risk_level)
+    progress.progress(100)
+
+status.empty()
+progress.empty()
+st.success("✅ Analysis completed successfully!")
+
+# ---------------- METRICS ----------------
+col1, col2, col3, col4 = st.columns(4)
+
+total_tx = len(df)
+fraud_tx = int(df["Fraud_Prediction"].sum())
+fraud_rate = fraud_tx / total_tx * 100
+high_risk_tx = (df["Risk_Level"] == "High").sum()
+
+col1.metric("Total Transactions", total_tx)
+col2.metric("Detected Frauds", fraud_tx)
+col3.metric("Fraud Rate (%)", f"{fraud_rate:.2f}%")
+col4.metric("High-Risk Transactions", high_risk_tx)
+
+# ---------------- DISTRIBUTION ----------------
+st.markdown("### ⚠️ Fraud Probability Distribution")
+fig, ax = plt.subplots(figsize=(8, 4))
+sns.histplot(df["Fraud_Probability"], bins=30, kde=True, ax=ax)
+ax.set_xlabel("Fraud Probability")
+ax.set_ylabel("Count")
+st.pyplot(fig)
+
+# ---------------- TABLE ----------------
+st.markdown("### 🔥 Medium & High-Risk Transactions")
+
+display_df = df[df["Risk_Level"].isin(["Medium", "High"])].copy()
+display_df.rename(columns=friendly_feature_names, inplace=True)
+
+display_cols = ["Prediction_Label", "Fraud_Probability", "Risk_Level"] + list(friendly_feature_names.values())
+display_df = display_df[[c for c in display_cols if c in display_df.columns]]
+
+st.dataframe(display_df, height=400)
+
+st.download_button(
+    "⬇️ Download Risk Transactions as CSV",
+    display_df.to_csv(index=False),
+    "fraud_risk_transactions.csv",
+    "text/csv"
+)
 
 # ---------------- FOOTER ----------------
 st.markdown("---")
