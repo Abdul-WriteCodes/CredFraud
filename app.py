@@ -63,13 +63,24 @@ df = pd.read_csv(uploaded_file)
 if "Class" in df.columns:
     df = df.drop(columns=["Class"])
 
-# Add missing columns
+# Strip whitespace from column names (common CSV issue)
+df.columns = df.columns.str.strip()
+
+# Add missing columns with default value 0
 for col in EXPECTED_COLUMNS:
     if col not in df.columns:
         df[col] = 0.0
 
-# Enforce correct order
+# Keep only expected columns and correct order
 df = df[EXPECTED_COLUMNS]
+
+# Ensure all columns are numeric (coerce errors to NaN)
+for col in df.columns:
+    df[col] = pd.to_numeric(df[col], errors='coerce')
+
+# Replace any NaN values (from coercion) with 0
+df.fillna(0, inplace=True)
+
 
 # ---------------- PREDICTION ----------------
 st.info("⏳ The system is analyzing transactions. Please wait…")
