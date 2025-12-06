@@ -80,7 +80,12 @@ uploaded_file = st.file_uploader("Upload CSV file containing transactions", type
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
+    # Remove 'Class' column if present
+    if 'Class' in df.columns:
+        df = df.drop('Class', axis=1)
+
     st.info("⏳ The system is analyzing transactions. Please wait…")
+
 
     progress = st.progress(0)
     status = st.empty()
