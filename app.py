@@ -84,7 +84,7 @@ uploaded_file = st.file_uploader("Upload CSV file containing transactions", type
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-    st.success("📄 File loaded successfully")
+    
     
     # -------- FEATURE VALIDATION (PRODUCTION CRITICAL) --------
     expected_features = model.get_booster().feature_names
