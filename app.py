@@ -181,13 +181,11 @@ if uploaded_file:
 
 # ---------------- FOOTER ----------------
 st.markdown("---")
-st.markdown(
-    """
-    <div style='text-align:center; font-size:13px; color:gray;'>
-        🔒 This system does not store uploaded data<br>
-        🔬Learn more about Developer: <a href="https://abdul-writecodes.github.io/abprt/index.html" target="_blank">Abdul</a><br>
-        © 2025
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+   <div style="text-align: center; font-size: 0.85em; color: gray; line-height: 1.6em;">
+    <strong>FinRisk-ML</strong>: Designed and Developed for use in <strong>Fintech and E-commerce payment platforms</strong><br>
+    🔬Learn more about Developer: <a href="https://abdul-writecodes.github.io/abprt/index.html" target="_blank">Abdul</a><br>
+    <strong>Disclaimer:</strong> This system does not collect or store any information <br>
+    © 2025 Abdul Write & Codes. All rights reserved.
+</div>
+""", unsafe_allow_html=True)
