@@ -14,7 +14,7 @@ import time
 
 # ---------------- PAGE SETUP ----------------
 st.set_page_config(
-    page_title="Fraud Detection System",
+    page_title="FinRisk-ML | Intelligent Fraud Detection",
     layout="wide",
     page_icon="💳"
 )
@@ -79,6 +79,14 @@ uploaded_file = st.file_uploader("Upload CSV file containing transactions", type
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
+    
+    # -------- FEATURE VALIDATION (PRODUCTION CRITICAL) --------
+    expected_features = model.get_booster().feature_names
+    missing_features = set(expected_features) - set(df.columns)
+
+    if missing_features:
+        st.error(f"❌ Missing required features: {sorted(missing_features)}")
+        st.stop()
 
     st.info("⏳ The system is analyzing transactions. Please wait…")
 
